@@ -1,0 +1,7 @@
+{
+  "name": "hiapp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
