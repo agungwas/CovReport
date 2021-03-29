@@ -234,3 +234,14 @@ http://ionicframework.com/docs/theming/ */
     --ion-card-background: #1e1e1e;
   }
 }
+
+@import url('https://fonts.googleapis.com/css?family=Josefin+Sans');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;900&display=swap');
+
+.box {
+  border-color: #403E39;
+  border-width: thin;
+  border-style: solid;
+  border-radius: 3px;
+}
