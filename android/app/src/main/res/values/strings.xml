@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Covid Reports</string>
+    <string name="title_activity_main">Covid Reports</string>
+    <string name="package_name">coba.agungwas.CovReports</string>
+    <string name="custom_url_scheme">coba.agungwas.CovReports</string>
+</resources>

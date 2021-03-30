@@ -3,7 +3,14 @@ import { ComponentProps, PropsWithRef, useEffect, useState } from 'react';
 import { RouteComponentProps, useHistory, useParams } from 'react-router';
 import bcyrpt from 'bcryptjs'
 import storage from '../helpers/storage'
-const { users, fStorage } = require('../helpers/firebase.ts')
+import {
+  Plugins,
+  PushNotification,
+  PushNotificationToken,
+  PushNotificationActionPerformed,
+} from '@capacitor/core';
+const { PushNotifications } = Plugins;
+const { users, fStorage, tokenFirebase } = require('../helpers/firebase.ts')
 const { hash, compare } = require('../helpers/bcrypt')
 
 // @ts-ignore
@@ -66,6 +73,68 @@ const Login: React.FC = ({ match }) => {
           }
         } 
         await storage.set('user', { name: data.name, email: data.email, isAdmin: data.isAdmin })
+
+        if (Boolean(data) && data.isAdmin) {
+          console.log('Initializing HomePage');
+    
+          // Request permission to use push notifications
+          // iOS will prompt user and return if they granted permission or not
+          // Android will just grant without prompting
+          PushNotifications.requestPermission().then( result => {
+            if (result.granted) {
+              // Register with Apple / Google to receive push via APNS/FCM
+              PushNotifications.register();
+            } else {
+              // Show some error
+            }
+          });
+    
+          // On success, we should be able to receive notifications
+          PushNotifications.addListener('registration',
+            async (token: PushNotificationToken) => {
+              // alert('Push registration success, token: ' + token.value);
+              const found = await tokenFirebase.where('token', '==', token.value ).get()
+              if (found.empty) {
+                await tokenFirebase.add({ token: token.value })
+              }
+              console.log('Push registration success, token: ' + token.value);
+            }
+          );
+    
+          // Some issue with our setup and push will not work
+          PushNotifications.addListener('registrationError',
+            (error: any) => {
+              // alert('Error on registration: ' + JSON.stringify(error));
+              console.log('Error on registration: ' + JSON.stringify(error));
+            }
+          );
+    
+          // // Show us the notification payload if the app is open on our device
+          // PushNotifications.addListener('pushNotificationReceived',
+          //   async (notification: PushNotification) => {
+          //     let messages = await storage.get('messages')
+          //     if (!messages) messages = []
+          //     messages.push(notification.data.message)
+          //     await storage.set('messages', messages)
+          //     // alert('Push received: ' + JSON.stringify(notification));
+          //     console.log('Push RECEIVED: ' + JSON.stringify(notification), 'dari received, di login')
+          //   }
+          // );
+    
+          // // Method called when tapping on a notification
+          // PushNotifications.addListener('pushNotificationActionPerformed',
+          //   async (notification: PushNotificationActionPerformed) => {
+          //     let messages = await storage.get('messages')
+          //     if (!messages) messages = []
+          //     messages.push(notification.notification.data.message)
+          //     await storage.set('messages', messages)
+          //     // alert('Push action performed: ' + JSON.stringify(notification));
+          //     console.log('Push ACTION performed: ' + JSON.stringify(notification), 'dari ACTION di login');
+          //     history.replace('/home/addcase')
+          //   }
+          // );
+    
+        }
         history.replace('/home/welcome')
       }
     } catch (error) { setError(error)
@@ -94,14 +163,14 @@ const Login: React.FC = ({ match }) => {
             }
             <IonItem className=''>
               <IonIcon slot='start' src='./assets/email.svg' className='ion-align-self-center'/>
-              <IonLabel position="floating" >Email address</IonLabel>
-              <IonInput type='email' id='email' required value={input.email} onIonChange={handleInput}></IonInput>
+              <IonLabel position="floating" >Phone Number</IonLabel>
+              <IonInput type='tel' id='email' minlength={5} required value={input.email} onIonChange={handleInput}></IonInput>
             </IonItem>
             <IonItem className=''>
               <IonIcon slot='start' src='./assets/gembok.svg' className='ion-align-self-center'/>
               <IonLabel position="floating">Password</IonLabel>
               { // @ts-ignore 
-              <IonInput type={showPassword} id='password' required value={input.password} onIonChange={handleInput}></IonInput>
+              <IonInput type={showPassword} minlength={5} id='password' required value={input.password} onIonChange={handleInput}></IonInput>
               }
               <IonIcon slot="end" src={showPassword === 'text' ? './assets/eye-outline.svg' : './assets/eye-off-outline.svg'} onClick={showPasswordPress} className='ion-align-self-center'></IonIcon>
             </IonItem>

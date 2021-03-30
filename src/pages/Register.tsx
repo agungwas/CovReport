@@ -53,15 +53,6 @@ const Register: React.FC = () => {
         }
       } 
 
-      // for (const idInput in input) {
-      //   // @ts-ignore
-      //   const element = input[idInput]
-      //   if (!element) setError({ 
-      //     status: true,
-      //     message: `${element.charAt(0).toUpperCase() + element.slice(1)} are bad input`
-      //   })   
-      // }
-      
       const found = await users.where('email', '==', input.email ).get()
       if (found.empty) {
         const data = {
@@ -76,7 +67,7 @@ const Register: React.FC = () => {
           email: data.email,
           isAdmin: data.isAdmin
         })
-        history.push('/home')
+        history.replace('/login')
       } else {
         found.forEach((el: any) => {
           if (el.id) throw { 
@@ -119,18 +110,18 @@ const Register: React.FC = () => {
             <IonItem className=''>
               <IonIcon slot='start' src='./assets/person.svg' className='ion-align-self-center'/>
               <IonLabel position="floating" >Name</IonLabel>
-              <IonInput type='text' id='name' required value={input.name} onIonChange={handleInput}></IonInput>
+              <IonInput type='text' id='name' minlength={3} required value={input.name} onIonChange={handleInput}></IonInput>
             </IonItem>
             <IonItem className=''>
               <IonIcon slot='start' src='./assets/email.svg' className='ion-align-self-center'/>
-              <IonLabel position="floating" >Email address</IonLabel>
-              <IonInput type='email' id='email' required value={input.email} onIonChange={handleInput}></IonInput>
+              <IonLabel position="floating" >Phone Number</IonLabel>
+              <IonInput type='tel' id='email' minlength={5} required value={input.email} onIonChange={handleInput}></IonInput>
             </IonItem>
             <IonItem className=''>
               <IonIcon slot='start' src='./assets/gembok.svg' className='ion-align-self-center'/>
               <IonLabel position="floating">Password</IonLabel>
               { // @ts-ignore 
-              <IonInput type={showPassword} id='password' required value={input.password} onIonChange={handleInput}></IonInput>
+              <IonInput type={showPassword} id='password' minlength={5} required value={input.password} onIonChange={handleInput}></IonInput>
               }
               <IonIcon slot="end" src={showPassword === 'text' ? './assets/eye-outline.svg' : './assets/eye-off-outline.svg'} onClick={showPasswordPress} className='ion-align-self-center'></IonIcon>
             </IonItem>
@@ -138,7 +129,7 @@ const Register: React.FC = () => {
               <IonIcon slot='start' src='./assets/gembok.svg' className='ion-align-self-center'/>
               <IonLabel position="floating">Confirm Password</IonLabel>
               { // @ts-ignore 
-              <IonInput type={showPassword} id='confirmPassword' required value={input.confirmPassword} onIonChange={handleInput}></IonInput>
+              <IonInput type={showPassword} id='confirmPassword' minlength={5} required value={input.confirmPassword} onIonChange={handleInput}></IonInput>
               }
             </IonItem>
             <IonButton type='submit' className='w-100'>Sign up</IonButton>

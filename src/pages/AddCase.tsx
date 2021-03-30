@@ -1,4 +1,4 @@
-import { IonButton, IonContent, IonItem, IonLoading, IonRow, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet } from '@ionic/react';
+import { IonButton, IonContent, IonItem, IonLoading, IonRow, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet, useIonViewDidEnter, LocationHistory, useIonViewWillLeave, IonThumbnail, IonAvatar, IonCard, IonCol } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router'
 import ExploreContainer from '../components/ExploreContainer';
 import firebase from 'firebase'
@@ -6,17 +6,37 @@ import { Route, useHistory } from 'react-router';
 import { Geolocation } from '@ionic-native/geolocation'
 import { Camera, CameraOptions } from '@ionic-native/camera'
 import storage from '../helpers/storage'
-import { useState } from 'react';
+import { PropsWithRef, useState } from 'react';
+import { tokenFirebase } from '../helpers/firebase';
+import {
+  Plugins,
+  PushNotification,
+  PushNotificationToken,
+  PushNotificationActionPerformed,
+} from '@capacitor/core';
+const { PushNotifications } = Plugins;
 const { users, fStorage, cases } = require('../helpers/firebase.ts')
 
+
+declare class InputForm {
+  name: string
+  address: string
+  age: number | undefined
+  photo: string
+  gender: string
+  location: Location
+  photos: string
+  detailLoc: {}
+  id?: string
+}
 
 const AddCase: React.FC = () => {
   const [ loading, setLoading ] = useState(false)
   const [ uploading, setUploading ] = useState(false)
-  // const [ progress, setProgress ] = useState(0)
-  const [ hasil, setHasil ] = useState('hasil')
+  const [ editStatus, setEditStatus ] = useState(false)
+  const [ uploadByGallery, setUploadByGallery ] = useState('')
   const history = useHistory()
-  const [ input, setInput ] = useState({
+  const [ input, setInput ]: any = useState({
     name: '',
     address: '',
     age: undefined,
@@ -24,18 +44,30 @@ const AddCase: React.FC = () => {
     gender: '',
     location: '',
     photos: '',
-    detailLoc: {},
+    detailLoc: {}
   })
+
+  function handleInput(e: any) { setInput({ ...input, [e.target.id]: e.target.value}) }
+
+  function clearInput() {
+    setInput({ name: '', address: '', age: undefined, photo: '', gender: '', location: '', photos: '', detailLoc: {} })
+    setUploadByGallery('')
+  }
+
+  useIonViewWillLeave(clearInput)
 
   useIonViewWillEnter(async () => {
     await storage.create()
     const data = await storage.get('user')
     if (!Boolean(data)) history.push('/login')
+    
+    if (history.location.state) {
+      setEditStatus(true)
+      // @ts-ignore
+      const editData = history.location.state.el
+      setInput({ ...editData })
+    } else setEditStatus(false)
   })
-
-  function handleInput(e: any) {
-    setInput({ ...input, [e.target.id]: e.target.value})
-  }
 
   async function getLoc() {
     setLoading(true)
@@ -48,10 +80,7 @@ const AddCase: React.FC = () => {
     setLoading(false)
   }
 
-  async function upload(e: any) {
-    setUploading(true)
-    const { email } = await storage.get('user')
-
+  async function upload(mode: string) {
     const options: CameraOptions = {
       quality: 100,
       destinationType: Camera.DestinationType.DATA_URL,
@@ -59,16 +88,21 @@ const AddCase: React.FC = () => {
       mediaType: Camera.MediaType.PICTURE,
       sourceType: Camera.PictureSourceType.CAMERA
     }
-    if (e.target.id === 'gallery') options.sourceType = Camera.PictureSourceType.PHOTOLIBRARY
+    if (mode === 'gallery') options.sourceType = Camera.PictureSourceType.PHOTOLIBRARY
     
     const data = await Camera.getPicture(options)
     const captureDataUrl = 'data:image/jpeg;base64,' + data;
+    setUploadByGallery(captureDataUrl)
+  }
+  
+  async function uploadGambar(e: any) {
+    e.preventDefault()
+    setUploading(true)
+    const { email, name } = await storage.get('user')
 
-    let url = fStorage(new Date().toISOString() + '.jpg').putString(captureDataUrl, firebase.storage.StringFormat.DATA_URL)
+    let url = fStorage(new Date().toISOString() + '.jpg').putString(uploadByGallery, firebase.storage.StringFormat.DATA_URL)
     url.on(firebase.storage.TaskEvent.STATE_CHANGED, // or 'state_changed'
       (snapshot: any) => {
-        var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-        // setProgress(progress)
         switch (snapshot.state) {
           case firebase.storage.TaskState.PAUSED: // or 'paused'
             setUploading(false)
@@ -81,7 +115,6 @@ const AddCase: React.FC = () => {
       }, 
       (error: any) => {
         setUploading(false)
-        
         switch (error.code) {
           case 'storage/unauthorized':
             break;
@@ -91,61 +124,125 @@ const AddCase: React.FC = () => {
             break;
         }
       },
-      () => {
-        url.snapshot.ref.getDownloadURL()
-          .then((downloadURL: any) => {
-            console.log('File available at', downloadURL);
-            setHasil(JSON.stringify(downloadURL, null, 2))
-            return cases.add({...input, photos: downloadURL, userEmail: email })  
-          })
-          .then((data: any) => {
-            console.log(data);
-            console.log('done men');
-            setUploading(false)
-          })
-          ;
+      async () => {
+        const downloadURL: string = await url.snapshot.ref.getDownloadURL()
+        if (editStatus) {
+          const id = input.id
+          delete input.id
+          await cases.doc(id).delete()
+          await cases.add({ ...input, photo: downloadURL, userEmail: email })
+        } 
+        else {
+          await cases.add({...input, photo: downloadURL, userEmail: email })
+        } 
+        await firingNotif(name)
       }
-      )
+    )
+  }
+
+  async function firingNotif(name: string) {
+
+    const registrationToken: any[] = [];
+    const tokenAdmin = await tokenFirebase.get()
+    if (!tokenAdmin.empty) {
+      tokenAdmin.forEach((datum: any) => {
+        registrationToken.push(datum.data().token)
+      })
+    }
+    
+    const body = JSON.stringify({
+      registration_ids: registrationToken,
+      data: {
+        message: `user "${name}" has reported new Covid-19’s cases`
+      },
+      notification:{
+        title: "New case reported!",
+        body: `user "${name}" has reported new Covid-19’s cases`
+      },
+      collapse_key: "Updates Available",
+      time_to_live: 86400
+    })
+    await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `key=AAAAdc8Ztpg:APA91bHJ431aOXIEwLnTancpWlLHEM8IS0EU46FV8LZuWG6hh1dYsvMk17uMq7NsDq0vFbw9VjIZ0BNV_Sb-npyQZA8rOs8Gnrt1x-spFSJnTLOz-CDCNJpyaLR2Rua3MpkDcc2-Swyz`,
+      },
+      body,
+    })
+    
+    clearInput()
+    setUploading(false)
+    history.replace('/home/welcome')
+  }
+
+  async function commitEdit(e: any) {      
+    if (!uploadByGallery && editStatus) {
+      // setUploading(true)
+      alert('lewat sini')
+      const { email, name } = await storage.get('user')
+      
+      const id = input.id
+      delete input.id
+      await cases.doc(id).delete()
+      await cases.add(input)
+      
+      await firingNotif(name)
+      history.replace('/home/welcome')
+    } else await uploadGambar(e)
   }
 
   return (
     <IonPage>
       <IonContent fullscreen>
-          <IonTitle
-          style={{ textAlign: 'center' }}
-          size="large" className=''>AddCase</IonTitle>
           <div className='d-flex justify-content-center align-items-center h-100'>
             <div>
-              <form >
+              <form onSubmit={editStatus ? commitEdit : uploadGambar}>
+                <IonTitle
+                style={{ textAlign: 'center' }}
+                size="large" className=''> { editStatus ? 'Edit Case' : 'Report New Case'}
+                </IonTitle>
                 <IonItem>
                   <IonLabel position="stacked">Name</IonLabel>
-                  <IonInput type='text' required id='name' value={input.name} onIonChange={handleInput} />
+                  <IonInput type='text' minlength={3} required id='name' value={input.name} onIonChange={handleInput} />
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Address</IonLabel>
-                  <IonInput type='text' required id='address' value={input.address} onIonChange={handleInput} />
+                  <IonInput type='text' minlength={3} required id='address' value={input.address} onIonChange={handleInput} />
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Age</IonLabel>
-                  <IonInput type='number' required id='age' value={input.age} onIonChange={handleInput} />
+                  <IonInput type='number' min='1' required id='age' value={input.age} onIonChange={handleInput} />
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Gender</IonLabel>
-                  <IonInput type='text' required id='gender' value={input.gender} onIonChange={handleInput} />
+                  <IonInput placeholder='Male/Female' type='text' minlength={3} required id='gender' value={input.gender} onIonChange={handleInput} />
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Location</IonLabel>
-                  <IonInput placeholder='40.7638435,-73.9729691' type='text' required id='location' value={input.location} onIonChange={handleInput} />
+                  <IonInput placeholder='ie. 40.7638435,-73.9729691' minlength={10} type='text' required id='location' value={input.location} onIonChange={handleInput} />
                   <IonIcon color='primary' className='ion-align-self-center' slot='end' src='./assets/location.svg' onClick={getLoc}/>
                 </IonItem>
-                <div>
-                  <IonButton type='submit' onClick={upload} id='camera' className='w-100'>Submit with camera</IonButton>
-                </div>
-                <div className='d-flex'>
-                  <IonText className='text-center w-100'>or</IonText>
-                </div>
-                <div>
-                  <IonButton type='submit' onClick={upload} id='gallery' className='w-100'>Submit with gallery</IonButton>
+                {editStatus && (
+                  <IonCard className='d-flex py-2 shadow justify-content-center '>
+                    <IonThumbnail style={{ size: 'large' }} className='h-auto w-25 col-4'>
+                      <IonImg src={input.photo} style={{ flex:1 }} ></IonImg>
+                    </IonThumbnail>
+                    <div className='d-flex flex-column justify-content-between'>
+                      <IonIcon size='large' color='primary' src='./assets/image-outline.svg' onClick={_=> upload('gallery')}>from gallery</IonIcon>
+                      <IonIcon size='large' color='primary' src='./assets/camera-outline.svg' onClick={_=> upload('camera')}>from camera</IonIcon>
+                    </div>
+                  </IonCard>
+                )}
+                {!editStatus && (
+                  <div className='d-flex justify-content-around mt-3'>
+                    <IonIcon size='large' color='primary' src='./assets/camera-outline.svg' onClick={_=> upload('camera')}>from camera</IonIcon>
+                    <IonText className='text-center align-self-center'>or</IonText>
+                    <IonIcon size='large' color='primary' src='./assets/image-outline.svg' onClick={_=> upload('gallery')}>from gallery</IonIcon>
+                  </div>
+                )}
+                <div className='d-flex justify-content-center mt-3'>
+                  <IonButton type='submit' >{ editStatus ? 'edit' : 'submit'}</IonButton>
                 </div>
               </form>
             </div>

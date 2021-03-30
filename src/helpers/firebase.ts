@@ -1,5 +1,5 @@
 import firebase from 'firebase'
-  // Your web app's Firebase configuration
+
 var firebaseConfig = {
   apiKey: "AIzaSyAxAmZCwggAFqxNK3H-QEVTOwOVYBFNiFw",
   authDomain: "serverionicagung.firebaseapp.com",
@@ -8,7 +8,7 @@ var firebaseConfig = {
   messagingSenderId: "505985742488",
   appId: "1:505985742488:web:c3b936f5c5a209c116c2ed"
 };
-  // Initialize Firebase
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore()
 const fStorage = function (nama: String) {
@@ -16,8 +16,6 @@ const fStorage = function (nama: String) {
 } 
 const users = db.collection('users')
 const cases = db.collection('cases')
+const tokenFirebase = db.collection('token')
 
-// module.exports = { admin, member }
-// export admin
-// export default member
-export { users, fStorage, cases }
+export { users, fStorage, cases, tokenFirebase }
