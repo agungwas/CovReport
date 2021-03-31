@@ -85,6 +85,17 @@ const AddCase: React.FC = () => {
     setUploading(true)
     const { email, name } = await storage.get('user')
 
+    if (!editStatus && !uploadByGallery) {
+      setUploading(false)
+      alert('You have to take/choose picture!')
+      return
+    }
+    if (input.isMale === undefined) {
+      setUploading(false)
+      alert('You have to choose gender!')
+      return 
+    }
+
     let url = fStorage(new Date().toISOString() + '.jpg').putString(uploadByGallery, firebase.storage.StringFormat.DATA_URL)
     url.on(firebase.storage.TaskEvent.STATE_CHANGED, // or 'state_changed'
       (snapshot: any) => {
@@ -176,7 +187,6 @@ const AddCase: React.FC = () => {
       await firingNotif(name)
     } else { await uploadGambar(e) }
   }
-
   return (
     <IonPage>
       <IonContent fullscreen>
@@ -201,7 +211,7 @@ const AddCase: React.FC = () => {
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Gender</IonLabel>
-                  <IonSelect value={selected} placeholder="Select One" id='isMale' onIonChange={handleInput}>
+                  <IonSelect aria-required value={selected} placeholder="Select One" id='isMale' onIonChange={handleInput}>
                     <IonSelectOption value={false}>Female</IonSelectOption>
                     <IonSelectOption value={true}>Male</IonSelectOption>
                   </IonSelect>
