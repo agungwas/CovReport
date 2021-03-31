@@ -1,7 +1,6 @@
 import { IonButton, IonLoading, useIonViewWillEnter, useIonViewWillLeave, IonCard, IonItem, IonContent, IonGrid, IonHeader, IonImg, IonInput, IonLabel, IonPage, IonRow, IonText, IonTitle, IonToolbar, IonIcon } from '@ionic/react';
-import { ComponentProps, PropsWithRef, useEffect, useState } from 'react';
-import { RouteComponentProps, useHistory, useParams } from 'react-router';
-import bcyrpt from 'bcryptjs'
+import { useState } from 'react';
+import { useHistory, useParams } from 'react-router';
 import storage from '../helpers/storage'
 import {
   Plugins,

@@ -1,10 +1,9 @@
 import react, { useState } from 'react'
 import chart from 'chart.js'
-import { Line, Bar, Doughnut } from 'react-chartjs-2'
-import { IonContent, IonLoading, IonPage, IonText, IonTitle, IonToolbar, useIonViewDidEnter, useIonViewWillEnter } from '@ionic/react'
+import { Bar } from 'react-chartjs-2'
+import { IonContent, IonPage, IonTitle, IonToolbar, useIonViewDidEnter } from '@ionic/react'
 import storage from '../helpers/storage'
 import { useHistory } from 'react-router'
-import { report } from 'node:process'
 const { users, fStorage, cases } = require('../helpers/firebase.ts')
 
 

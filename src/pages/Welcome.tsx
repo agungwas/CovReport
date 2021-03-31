@@ -1,7 +1,6 @@
-import { IonButton, IonContent, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet, IonRouterLink, useIonViewDidEnter, useIonViewDidLeave, useIonViewWillLeave, IonCard, IonCardHeader, IonCardContent, IonCardSubtitle, IonThumbnail, IonCardTitle, IonItem, IonCol, IonLoading } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router'
+import { IonContent, IonHeader, IonIcon, IonImg, IonPage, IonTitle, IonToolbar, useIonViewWillEnter, useIonViewDidEnter, useIonViewWillLeave, IonCard, IonCardSubtitle, IonThumbnail, IonCardTitle, IonCol, IonLoading } from '@ionic/react';
 import { useState } from 'react';
-import { Route, useHistory } from 'react-router';
+import { useHistory } from 'react-router';
 import storage from '../helpers/storage'
 import {
   Plugins,

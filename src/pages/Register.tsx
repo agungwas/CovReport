@@ -1,4 +1,4 @@
-import { IonButton, IonLoading, IonCard, IonItem, IonContent, IonGrid, IonHeader, IonImg, IonInput, IonLabel, IonPage, IonRow, IonText, IonTitle, IonToolbar, IonIcon, useIonViewWillEnter, useIonViewDidEnter, useIonViewDidLeave, useIonViewWillLeave } from '@ionic/react';
+import { IonButton, IonLoading, IonItem, IonInput, IonLabel, IonPage, IonText, IonIcon, useIonViewWillEnter, useIonViewWillLeave } from '@ionic/react';
 import { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router';
 import storage from '../helpers/storage'
@@ -7,7 +7,6 @@ const { hash } = require('../helpers/bcrypt')
 
 
 const Register: React.FC = () => {
-  const params = useParams()
   const history = useHistory()
   const [ showPassword, setShowPassword ] = useState('password')
   const [ loading, setLoading ] = useState(false)

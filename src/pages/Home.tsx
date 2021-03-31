@@ -1,5 +1,4 @@
-import { IonButton, IonContent, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet, useIonViewDidEnter, useIonViewDidLeave } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router'
+import { IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, useIonViewWillEnter, IonRouterOutlet, useIonViewDidEnter } from '@ionic/react';
 import { Redirect, Route, useHistory, useParams } from 'react-router';
 import storage from '../helpers/storage'
 import Welcome from '../pages/Welcome'
@@ -13,7 +12,6 @@ import {
   PushNotificationActionPerformed,
 } from '@capacitor/core';
 const { PushNotifications } = Plugins;
-const { users, fStorage, tokenFirebase } = require('../helpers/firebase.ts')
 
 
 const Home: React.FC = () => {
