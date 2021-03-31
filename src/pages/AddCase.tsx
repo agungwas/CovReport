@@ -1,5 +1,4 @@
 import { IonButton, IonContent, IonItem, IonLoading, IonIcon, IonLabel, IonImg, IonInput, IonPage, IonText, IonTitle, useIonViewWillEnter, useIonViewWillLeave, IonThumbnail, IonCard, IonSelect, IonSelectOption } from '@ionic/react';
-// import firebase from 'firebase'
 import firebase from 'firebase'
 import { useHistory } from 'react-router';
 import { Geolocation } from '@ionic-native/geolocation'
@@ -172,7 +171,7 @@ const AddCase: React.FC = () => {
       delete input.id
       delete input.authorized
 
-      const edited = await cases.doc(id).set(input)
+      await cases.doc(id).set(input)
       
       await firingNotif(name)
     } else { await uploadGambar(e) }
