@@ -1,56 +1,41 @@
-import { IonButton, IonContent, IonItem, IonLoading, IonRow, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet, useIonViewDidEnter, LocationHistory, useIonViewWillLeave, IonThumbnail, IonAvatar, IonCard, IonCol } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router'
-import ExploreContainer from '../components/ExploreContainer';
+import { IonButton, IonContent, IonItem, IonLoading, IonIcon, IonLabel, IonImg, IonInput, IonPage, IonText, IonTitle, useIonViewWillEnter, useIonViewWillLeave, IonThumbnail, IonCard, IonSelect, IonSelectOption } from '@ionic/react';
+// import firebase from 'firebase'
 import firebase from 'firebase'
-import { Route, useHistory } from 'react-router';
+import { useHistory } from 'react-router';
 import { Geolocation } from '@ionic-native/geolocation'
 import { Camera, CameraOptions } from '@ionic-native/camera'
 import storage from '../helpers/storage'
-import { PropsWithRef, useState } from 'react';
+import { useState } from 'react';
 import { tokenFirebase } from '../helpers/firebase';
-import {
-  Plugins,
-  PushNotification,
-  PushNotificationToken,
-  PushNotificationActionPerformed,
-} from '@capacitor/core';
-const { PushNotifications } = Plugins;
 const { users, fStorage, cases } = require('../helpers/firebase.ts')
 
-
-declare class InputForm {
-  name: string
-  address: string
-  age: number | undefined
-  photo: string
-  gender: string
-  location: Location
-  photos: string
-  detailLoc: {}
-  id?: string
-}
 
 const AddCase: React.FC = () => {
   const [ loading, setLoading ] = useState(false)
   const [ uploading, setUploading ] = useState(false)
   const [ editStatus, setEditStatus ] = useState(false)
   const [ uploadByGallery, setUploadByGallery ] = useState('')
+  const [ selected, setSelected ] = useState(null)
   const history = useHistory()
   const [ input, setInput ]: any = useState({
     name: '',
     address: '',
     age: undefined,
     photo: '',
-    gender: '',
+    isMale: undefined,
     location: '',
     photos: '',
     detailLoc: {}
   })
 
-  function handleInput(e: any) { setInput({ ...input, [e.target.id]: e.target.value}) }
+  function handleInput(e: any) {
+    if (e.target.id === 'isMale') setSelected(e.target.value)
+    setInput({ ...input, [e.target.id]: e.target.value}) 
+  }
 
   function clearInput() {
-    setInput({ name: '', address: '', age: undefined, photo: '', gender: '', location: '', photos: '', detailLoc: {} })
+    setSelected(null)
+    setInput({ name: '', address: '', age: undefined, photo: '', isMale: undefined, location: '', photos: '', detailLoc: {} })
     setUploadByGallery('')
   }
 
@@ -66,6 +51,7 @@ const AddCase: React.FC = () => {
       // @ts-ignore
       const editData = history.location.state.el
       setInput({ ...editData })
+      setSelected(editData.isMale)
     } else setEditStatus(false)
   })
 
@@ -129,8 +115,8 @@ const AddCase: React.FC = () => {
         if (editStatus) {
           const id = input.id
           delete input.id
-          await cases.doc(id).delete()
-          await cases.add({ ...input, photo: downloadURL, userEmail: email })
+          delete input.authorized
+          await cases.doc(id).set({ ...input, photo: downloadURL })
         } 
         else {
           await cases.add({...input, photo: downloadURL, userEmail: email })
@@ -176,20 +162,20 @@ const AddCase: React.FC = () => {
     history.replace('/home/welcome')
   }
 
-  async function commitEdit(e: any) {      
+  async function commitEdit(e: any) {     
+    e.preventDefault() 
     if (!uploadByGallery && editStatus) {
-      // setUploading(true)
-      alert('lewat sini')
+      setUploading(true)
       const { email, name } = await storage.get('user')
       
       const id = input.id
       delete input.id
-      await cases.doc(id).delete()
-      await cases.add(input)
+      delete input.authorized
+
+      const edited = await cases.doc(id).set(input)
       
       await firingNotif(name)
-      history.replace('/home/welcome')
-    } else await uploadGambar(e)
+    } else { await uploadGambar(e) }
   }
 
   return (
@@ -216,7 +202,10 @@ const AddCase: React.FC = () => {
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Gender</IonLabel>
-                  <IonInput placeholder='Male/Female' type='text' minlength={3} required id='gender' value={input.gender} onIonChange={handleInput} />
+                  <IonSelect value={selected} placeholder="Select One" id='isMale' onIonChange={handleInput}>
+                    <IonSelectOption value={false}>Female</IonSelectOption>
+                    <IonSelectOption value={true}>Male</IonSelectOption>
+                  </IonSelect>
                 </IonItem>
                 <IonItem>
                   <IonLabel position="stacked">Location</IonLabel>

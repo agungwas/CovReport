@@ -3,7 +3,14 @@ import { IonReactRouter } from '@ionic/react-router'
 import { useState } from 'react';
 import { Route, useHistory } from 'react-router';
 import storage from '../helpers/storage'
+import {
+  Plugins,
+  PushNotification,
+  PushNotificationToken,
+  PushNotificationActionPerformed,
+} from '@capacitor/core';
 const { users, fStorage, cases } = require('../helpers/firebase.ts')
+const { PushNotifications } = Plugins;
 
 interface PropsInterface {
   messages: Array<string>
@@ -14,15 +21,31 @@ const Welcome: React.FC = () => {
   const [ messageNotifikasi, setMessageNotifikasi ] = useState([])
   const [ casesView, setCasesView ] = useState([])
   const [ loading, setLoading ] = useState(false)
-  const [ authorized, setAuthorized ] = useState(false)
 
   useIonViewDidEnter(async () => {
     const messages = await storage.get('messages')
     if (messageNotifikasi && messages) setMessageNotifikasi(messages)
+    PushNotifications.addListener('pushNotificationReceived',
+      async (notification: PushNotification) => {
+        let messages = await storage.get('messages')
+        if (!messages) messages = []
+        messages.push(notification.data.message)
+        await storage.set('messages', messages)
+        // alert('Push received: ' + JSON.stringify(notification));
+        console.log('Push RECEIVED: ' + JSON.stringify(notification), 'dari received, di welcome')
+        const messagesNew = await storage.get('messages')
+        if (messagesNew) {
+          // setCountNewCase(messagesNew.length)
+          setMessageNotifikasi(messagesNew)
+        }
+        
+      }
+    );
   })
 
   useIonViewWillLeave(async () => {
     await storage.remove('messages')
+    setMessageNotifikasi([])
   })
 
   useIonViewWillEnter(async () => {
@@ -37,8 +60,9 @@ const Welcome: React.FC = () => {
       else dataCases = await cases.where('userEmail', '==', data.email).get()
       if (!dataCases.empty) {
         dataCases.forEach((el: any) => {
-          const authorized = data.email === el.userEmail ? true : false
-          temp.push({ ...el.data(), id: el.id, authorized })
+          const datum = el.data()
+          const authorized = data.email === datum.userEmail ? true : false
+          temp.push({ ...datum, id: el.id, authorized })
         })
       }
       setCasesView(temp)
@@ -81,6 +105,13 @@ const Welcome: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
+        { messageNotifikasi.length > 0 && (
+          <IonCard >
+            { messageNotifikasi.map((el: any, index:number) => (
+              <IonCardSubtitle key={index} className="p-1 px-2" >{el} </IonCardSubtitle>
+            )) }
+          </IonCard>
+        )  }
       {casesView.length > 0 && casesView.map((el: any) => (
           <IonCard key={el.id} className='d-flex py-2 shadow'>
             <IonThumbnail style={{ size: 'large' }} className='h-auto w-25 col-4'>
@@ -90,11 +121,11 @@ const Welcome: React.FC = () => {
               <IonCardTitle>{el.name} </IonCardTitle>
               <IonCardSubtitle>Age: {el.age} </IonCardSubtitle>
               <IonCardSubtitle>Adress: {el.address} </IonCardSubtitle>
-              <IonCardSubtitle>Gender: {el.gender} </IonCardSubtitle>
+              <IonCardSubtitle>Gender: {el.isMale ? 'Male' : 'Female' } </IonCardSubtitle>
               <IonCardSubtitle>Location: {el.detailLoc?.county}, {el.detailLoc?.region}, {el.detailLoc?.country} </IonCardSubtitle>
             </IonCol>
             {el.authorized &&
-            <IonCol className='col-2 d-flex flex-column justify-content-around align-items-end'>
+            <IonCol key={el.id} className='col-2 d-flex flex-column justify-content-around align-items-end'>
               <IonIcon size='large' src='./assets/hapus.svg' style={{ height: 60, color: 'red' }} className='' onClick={_=> deleteCase(el.id)} />
               <IonIcon onClick={_=> history.replace({ pathname: '/home/addcase', state: { el }})} size='large' src='./assets/edit.svg' color='primary' style={{ height: 60 }} className='' />
             </IonCol>}

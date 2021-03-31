@@ -1,9 +1,10 @@
-import { IonButton, IonContent, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet, useIonViewDidEnter } from '@ionic/react';
+import { IonButton, IonContent, IonHeader, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, IonTabs, IonImg, IonInput, IonPage, IonText, IonTitle, IonToolbar, useIonViewWillEnter, IonTab, IonRouterOutlet, useIonViewDidEnter, useIonViewDidLeave } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router'
 import { Redirect, Route, useHistory, useParams } from 'react-router';
 import storage from '../helpers/storage'
 import Welcome from '../pages/Welcome'
 import AddCase from '../pages/AddCase'
+import Summary from '../pages/Summary'
 import { useEffect, useState } from 'react';
 import {
   Plugins,
@@ -17,48 +18,43 @@ const { users, fStorage, tokenFirebase } = require('../helpers/firebase.ts')
 
 const Home: React.FC = () => {
   const [ countNewCase, setCountNewCase ] = useState(0)
-  const [ messageNotification, setMessageNotification ] = useState([])
   const [ isAdmin, setIsAdmin ] = useState(false)
   const history = useHistory() 
   const params = useParams()
 
   useEffect(() => {
+    setCountNewCase(0)
     refreshBadge()
       .then(_=> console.log('dari useEffect home'))
       .catch(_=> console.log('dari useEffect home'))
   }, [params])
 
   const refreshBadge = async () => {
-    // Show us the notification payload if the app is open on our device
+
     PushNotifications.addListener('pushNotificationReceived',
       async (notification: PushNotification) => {
-        let messages = await storage.get('messages')
-        if (!messages) messages = []
-        messages.push(notification.data.message)
-        await storage.set('messages', messages)
-        // alert('Push received: ' + JSON.stringify(notification));
-        console.log('Push RECEIVED: ' + JSON.stringify(notification), 'dari received, di login')
+        console.log(JSON.stringify(notification.data, null));
+        
+        await refreshNotif(notification.data.messages)
       }
     );
 
-    // Method called when tapping on a notification
     PushNotifications.addListener('pushNotificationActionPerformed',
       async (notification: PushNotificationActionPerformed) => {
-        let messages = await storage.get('messages')
-        if (!messages) messages = []
-        messages.push(notification.notification.data.message)
-        await storage.set('messages', messages)
-        // alert('Push action performed: ' + JSON.stringify(notification));
-        console.log('Push ACTION performed: ' + JSON.stringify(notification), 'dari ACTION di login');
-        history.replace('/home/addcase')
+        await refreshNotif(notification.notification.data.messages)
+        history.replace('/home/welcome')
       }
-    );
-    const messages = await storage.get('messages')
-    if (messages) {
-      setCountNewCase(messages.length)
-      setMessageNotification(messages)
-    }
-    
+    );    
+  }
+
+  async function refreshNotif(notification: any) {
+    await storage.create()
+    let messages = await storage.get('messages')
+    if (!messages) messages = []
+    messages.push(notification)
+    await storage.set('messages', messages)
+    // console.log('Push ACTION performed: ' + JSON.stringify(notification), 'dari ACTION di login');
+    setCountNewCase(messages?.length)
   }
 
   useIonViewDidEnter(refreshBadge)
@@ -71,13 +67,16 @@ const Home: React.FC = () => {
   })
 
   return (
-        <IonTabs onIonTabsDidChange={refreshBadge}>
+        <IonTabs>
             <IonRouterOutlet>
               <Route path="/home/welcome" >
                 <Welcome />
               </Route>
               <Route path="/home/addcase">
                 <AddCase />
+              </Route>
+              <Route path="/home/summary">
+                <Summary />
               </Route>
               <Route exact path="/home">
                 <Redirect to="/home/welcome" />
@@ -93,6 +92,12 @@ const Home: React.FC = () => {
               }
             </IonTabButton>
 
+            { isAdmin &&
+              <IonTabButton tab="summary" href='/home/summary'>
+                <IonIcon size='large' src='./assets/bar-chart-outline.svg' className='ion-align-self-center'/>
+                <IonLabel>Summary</IonLabel>
+              </IonTabButton>
+            }
             { isAdmin === false &&
               <IonTabButton tab="Add case" href='/home/addcase'>
                 <IonIcon size='large' src='./assets/add-circle-outline.svg' className='ion-align-self-center'/>

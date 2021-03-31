@@ -52,11 +52,10 @@ const Login: React.FC = ({ match }) => {
     try {
       e.preventDefault()
       setLoading(true)
-      setInput({ ...input, email: input.email.toLowerCase() })
 
       const found = await users.where('email', '==', input.email ).get()
       if (found.empty) {
-        throw { 
+        throw {
           status: true,
           message: `Please register first!`
         }

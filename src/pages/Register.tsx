@@ -45,7 +45,7 @@ const Register: React.FC = () => {
     try {
       e.preventDefault()
       setLoading(true)
-      setInput({ ...input, email: input.email.toLowerCase() })
+
       if (input.password !== input.confirmPassword) {
         throw { 
           status: true,
